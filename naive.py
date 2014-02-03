@@ -3,60 +3,40 @@
 import numpy as np
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.datasets import *
+from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt # Ploting
 
 repetition = 5 # The algorithm will run this number of times
-dataSplit = 500 # Number of samples in the training and testing sets
+budget = 500 # Number of samples in the training and testing sets
 trainingIncrement = 10 # Number of examples that are going to change in each interaction
+seed = 723
 
-# Split the data randomly
-def randonization(data):
-	randomData = np.random.permutation(data)
-
-	train = {'sample' : [], 'answer' : []}
-	test = {'sample' : [], 'answer' : []}
-    
-	for i in range (dataSplit):
-		train['sample'] += [randomData[i][0]]
-		test['sample'] += [randomData[i+dataSplit][0]]
-        
-		train['answer'] += [randomData[i][1]]
-		test['answer'] += [randomData[i+dataSplit][1]]
-
-	return [train, test]
 
 digits = load_digits() # Data
 clf = MultinomialNB()  # Multinomial Naive Bayes
 
-data = []
-
-# Transforming the dataset in a list [[SAMPLE, CLASSIFICATION]]
-for i in range (len(digits.data)):
-    data += [[digits.data[i], digits.target[i]]]
+dataset = range(0, len(digits.data))
 
 graph = []
+np.random.seed(seed)
 
 for k in range(repetition):
  
-	train, test = randonization(data)
+	data = np.random.permutation(dataset)
     
-	output = {'labeled' : [], 'accuracy' : []}
 	i = trainingIncrement
 
-	while i < dataSplit:
-		accuracy = 0
-		# Training
-		clf.fit(train['sample'][:i], train['answer'][:i])
+	output = {'labeled' : [], 'accuracy' : []}
 
-		# Predicting
-		for j in range (dataSplit):
-			if clf.predict(test['sample'][j]) == test['answer'][j]:
-				accuracy += 1.0
+	while i < budget:
+		clf.fit(digits.data[data[:i]], digits.target[data[:i]])
+		y = clf.predict(digits.data[data[budget - 1:]])
 
 		output['labeled'] += [i]
-		output['accuracy'] += [accuracy]
+		output['accuracy'] += [accuracy_score(digits.target[data[budget - 1:]], y)]
 
 		i += trainingIncrement
+
 
 	graph += [output]
 
@@ -77,6 +57,7 @@ graph += [output]
 
 # Ploting
 for i in range(len(graph) - 1):
-    plt.plot(graph[i]['labeled'], graph[i]['accuracy'], '--')
-plt.plot(graph[i+1]['labeled'], graph[i+1]['accuracy'], '-')
+    plt.plot(graph[i]['labeled'], graph[i]['accuracy'], '--', label='Test %d' % (i+1))
+plt.plot(graph[i+1]['labeled'], graph[i+1]['accuracy'], '-', label='Average')
+plt.legend(loc='best')
 plt.show()
