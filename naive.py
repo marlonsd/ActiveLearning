@@ -4,10 +4,11 @@ import numpy as np
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.datasets import *
 from sklearn.metrics import accuracy_score
+from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt # Ploting
 
-repetition = 5 # The algorithm will run this number of times
-budget = 500 # Number of samples in the training and testing sets
+fold = 5 # Number of folds in the cross-validation
+budget = 898 # Number of samples in the training and testing sets
 trainingIncrement = 10 # Number of examples that are going to change in each interaction
 seed = 723
 
@@ -20,25 +21,25 @@ dataset = range(0, len(digits.data))
 graph = []
 np.random.seed(seed)
 
-for k in range(repetition):
- 
-	unlabeledData = np.random.permutation(dataset)
-    
+kf = KFold(len(digits.target), n_folds=fold, indices=True)
+
+for train, test in kf:
+	
+	train = np.random.permutation(train)
+
 	i = trainingIncrement
 
 	output = {'labeled' : [], 'accuracy' : []}
 
-	labeledData = []
+	labeledData = np.ndarray((0,))
 
-	while i < budget and len(unlabeledData) > 0:
-		for j in range(trainingIncrement):
-			labeledData += [unlabeledData.pop(j)]
+	while i < budget and i < len(train):
 
-		clf.fit(digits.data[data[:i]], digits.target[data[:i]])
-		y = clf.predict(digits.data[data[budget - 1:]])
+		clf.fit(digits.data[train[:i]], digits.target[train[:i]])
+		y = clf.predict(digits.data[test])
 
 		output['labeled'] += [i]
-		output['accuracy'] += [accuracy_score(digits.target[data[budget - 1:]], y)]
+		output['accuracy'] += [accuracy_score(digits.target[test], y)]
 
 		i += trainingIncrement
 
