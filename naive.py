@@ -22,13 +22,18 @@ np.random.seed(seed)
 
 for k in range(repetition):
  
-	data = np.random.permutation(dataset)
+	unlabeledData = np.random.permutation(dataset)
     
 	i = trainingIncrement
 
 	output = {'labeled' : [], 'accuracy' : []}
 
-	while i < budget:
+	labeledData = []
+
+	while i < budget and len(unlabeledData) > 0:
+		for j in range(trainingIncrement):
+			labeledData += [unlabeledData.pop(j)]
+
 		clf.fit(digits.data[data[:i]], digits.target[data[:i]])
 		y = clf.predict(digits.data[data[budget - 1:]])
 
