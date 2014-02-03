@@ -12,6 +12,22 @@ budget = 898 # Number of samples in the training and testing sets
 trainingIncrement = 10 # Number of examples that are going to change in each interaction
 seed = 723
 
+def uncertaintySampling(unlabeled, labeled, dataset, trainingIncrement):
+	candidates = []
+	for i in range(len(unlabeled)):
+		count = len(np.where(labeled == unlabeled[i]))
+		candidates += [[i, count]]
+
+	candidates = sorted(candidates, key= lambda (x,y):y)
+
+	out = []
+
+	for i in range(trainingIncrement):
+		out += [candidates[i][0]]
+
+	# unlabeled = np.delete(unlabeled, out)
+
+	return out
 
 digits = load_digits() # Data
 clf = MultinomialNB()  # Multinomial Naive Bayes
@@ -23,25 +39,39 @@ np.random.seed(seed)
 
 kf = KFold(len(digits.target), n_folds=fold, indices=True)
 
-for train, test in kf:
+for unlabeledData, test in kf:
 	
-	train = np.random.permutation(train)
+	unlabeledData = np.random.permutation(unlabeledData)
 
 	i = trainingIncrement
 
 	output = {'labeled' : [], 'accuracy' : []}
 
-	labeledData = np.ndarray((0,))
+	labeledData = unlabeledData[:trainingIncrement]
 
-	while i < budget and i < len(train):
+	while i < budget and len(unlabeledData) > 0:
 
-		clf.fit(digits.data[train[:i]], digits.target[train[:i]])
+		if len(labeledData) == trainingIncrement:
+			for j in range (trainingIncrement):
+				unlabeledData = np.delete(unlabeledData, 0)
+
+		clf.fit(digits.data[labeledData], digits.target[labeledData])
 		y = clf.predict(digits.data[test])
 
 		output['labeled'] += [i]
 		output['accuracy'] += [accuracy_score(digits.target[test], y)]
 
+		print 'Labeled Data: ', labeledData
+		print
+		print 'Unlabeled Data: ', unlabeledData
+
+		print
+		print
+
 		i += trainingIncrement
+		append = uncertaintySampling(unlabeledData, labeledData, digits, trainingIncrement)
+		labeledData = np.append(labeledData, unlabeledData[append])
+		unlabeledData = np.delete(unlabeledData, append)
 
 
 	graph += [output]
