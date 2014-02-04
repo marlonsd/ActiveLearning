@@ -15,17 +15,15 @@ seed = 723
 def uncertaintySampling(unlabeled, labeled, dataset, trainingIncrement):
 	candidates = []
 	for i in range(len(unlabeled)):
-		count = len(np.where(labeled == unlabeled[i]))
+		count = 1 - (len(np.where(labeled == unlabeled[i])) / float(len(labeled))) 
 		candidates += [[i, count]]
 
-	candidates = sorted(candidates, key= lambda (x,y):y)
+	candidates = sorted(candidates, key= lambda (x,y):y, reverse=False)
 
 	out = []
 
 	for i in range(trainingIncrement):
 		out += [candidates[i][0]]
-
-	# unlabeled = np.delete(unlabeled, out)
 
 	return out
 
@@ -61,12 +59,12 @@ for unlabeledData, test in kf:
 		output['labeled'] += [i]
 		output['accuracy'] += [accuracy_score(digits.target[test], y)]
 
-		print 'Labeled Data: ', labeledData
-		print
-		print 'Unlabeled Data: ', unlabeledData
+		# print 'Labeled Data: ', labeledData
+		# print
+		# print 'Unlabeled Data: ', unlabeledData
 
-		print
-		print
+		# print
+		# print
 
 		i += trainingIncrement
 		append = uncertaintySampling(unlabeledData, labeledData, digits, trainingIncrement)
