@@ -5,11 +5,13 @@ Created on Jan 30, 2014
 '''
 
 from time import time
+from sys import platform # To check operating systems
 
+import argparse # To use arguments
 import numpy as np
-from sklearn.naive_bayes import MultinomialNB
-from sklearn import metrics
 
+from sklearn import metrics
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.datasets import load_svmlight_file
 
 from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach
@@ -23,8 +25,15 @@ if (__name__ == '__main__'):
     
     t0 = time()
            
-    X_pool, y_pool = load_svmlight_file("C:\\Users\\mbilgic\\Desktop\\aclImdb\\imdb-binary-pool-mindf5-ng11", n_features=27272)
-    X_test, y_test = load_svmlight_file("C:\\Users\\mbilgic\\Desktop\\aclImdb\\imdb-binary-test-mindf5-ng11", n_features=27272)
+
+    # Checking operating system. Accessing folders is different in Windows and Unix based systems
+    if platform == "win32":
+        X_pool, y_pool = load_svmlight_file("data\\imdb-binary-pool-mindf5-ng11", n_features=27272)
+        X_test, y_test = load_svmlight_file("data\\imdb-binary-test-mindf5-ng11", n_features=27272)
+        
+    elif platform == "linux" or platform == "linux2" or platform == "darwin":
+        X_pool, y_pool = load_svmlight_file("data/imdb-binary-pool-mindf5-ng11", n_features=27272)
+        X_test, y_test = load_svmlight_file("data/imdb-binary-test-mindf5-ng11", n_features=27272)
     
     duration = time() - t0
     
