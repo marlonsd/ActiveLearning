@@ -27,14 +27,36 @@ if (__name__ == '__main__'):
            
 
     # Checking operating system. Accessing folders is different in Windows and Unix based systems
-    if platform == "win32":
-        X_pool, y_pool = load_svmlight_file("data\\imdb-binary-pool-mindf5-ng11", n_features=27272)
-        X_test, y_test = load_svmlight_file("data\\imdb-binary-test-mindf5-ng11", n_features=27272)
+    # if platform == "win32":
+    #     X_pool, y_pool = load_svmlight_file("data\\imdb-binary-pool-mindf5-ng11", n_features=27272)
+    #     X_test, y_test = load_svmlight_file("data\\imdb-binary-test-mindf5-ng11", n_features=27272)
         
-    elif platform == "linux" or platform == "linux2" or platform == "darwin":
-        X_pool, y_pool = load_svmlight_file("data/imdb-binary-pool-mindf5-ng11", n_features=27272)
-        X_test, y_test = load_svmlight_file("data/imdb-binary-test-mindf5-ng11", n_features=27272)
-    
+    # elif platform == "linux" or platform == "linux2" or platform == "darwin":
+    #     X_pool, y_pool = load_svmlight_file("data/imdb-binary-pool-mindf5-ng11", n_features=27272)
+    #     X_test, y_test = load_svmlight_file("data/imdb-binary-test-mindf5-ng11", n_features=27272)
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-d", '--data', nargs=3, metavar=('pool', 'test', 'features'),
+                        default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11" ,27272],
+                        help='Files that contains the data, pool and test, and number of \
+                        features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
+    parser.add_argument("-nt", "--numTrials", type=int, default=10, help="Number of trials (default: 10).")
+    parser.add_argument("-st", "--strategy", choices=['log', 'rand', 'rot','unc'], default='rand',
+                        help="Represent the base strategy for choosing next samples (default: rand).")
+    parser.add_argument("-s", '--sizes', nargs=4, metavar=('bootstrap', 'budget', 'stepsize', 'subpool'),
+                        default=[2, 500, 2, 250], type=int, help='Bootsrap, budget, \
+                        step size and sub pool (default: 10 510 10 250).')
+
+    args = parser.parse_args()
+
+    dataPool = args.data[0]
+    dataTest = args.data[1]
+    n_features = args.data[2]
+
+    X_pool, y_pool = load_svmlight_file(dataPool, n_features=n_features)
+    X_test, y_test = load_svmlight_file(dataTest, n_features=n_features)
+
     duration = time() - t0
     
     num_pool, num_feat = X_pool.shape
@@ -42,12 +64,19 @@ if (__name__ == '__main__'):
     print
     print "Loading took %0.2fs." % duration
     print
-    
-    bootStrapSize = 2
-    budget = 500
-    stepSize = 2
-    numtrials = 10
-    sub_pool = 250
+
+    numtrials = args.numTrials
+    # numtrials = 10
+    strategy = args.strategy
+
+    bootStrapSize = args.sizes[0]
+    # bootStrapSize = 2
+    budget = args.sizes[1]
+    # budget = 500
+    stepSize = args.sizes[2]
+    # stepSize = 2
+    sub_pool = args.sizes[3]
+    # sub_pool = 250    
     
     alpha=1
     
@@ -71,10 +100,18 @@ if (__name__ == '__main__'):
         
         bootsrapped = False
         
-        activeS = RandomStrategy(seed=t)
-        #activeS = UncStrategy(seed=t, sub_pool = sub_pool)       
-        #activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
-        #activeS = RotateStrategy(strategies = [UncStrategy(seed=t, sub_pool = sub_pool), LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)])
+        #'log', 'rand', 'rot','unc'
+
+        if strategy == 'log':
+            activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
+        elif strategy == 'rand':    
+            activeS = RandomStrategy(seed=t)
+        elif strategy == 'rot':
+            activeS = RotateStrategy(strategies = [UncStrategy(seed=t, sub_pool = sub_pool), LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)])
+        else:
+            activeS = UncStrategy(seed=t, sub_pool = sub_pool)       
+        
+        
 
         
         model = None
