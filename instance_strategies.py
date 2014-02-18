@@ -98,12 +98,6 @@ class LogGainStrategy(BaseStrategy):
         
         list_pool = list(pool)
         
-        # Uncertain candidates
-        #probs = model.predict_proba(X[list_pool])
-        #uncerts = np.min(probs, axis=1)        
-        #uis = np.argsort(uncerts)[::-1]
-        #candidates = [list_pool[i] for i in uis[:num_candidates]]
-        
         
         #random candidates
         rand_indices = self.randgen.permutation(len(pool))                
@@ -134,7 +128,6 @@ class LogGainStrategy(BaseStrategy):
         
         uis = np.argsort(utils)
         
-        #print utils[uis[0]], utils[uis[-1]]
         
         chosen = [candidates[i] for i in uis[:k]]
         

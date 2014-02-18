@@ -5,7 +5,6 @@ Created on Jan 30, 2014
 '''
 
 from time import time
-from sys import platform # To check operating systems
 
 import argparse # To use arguments
 import numpy as np
@@ -24,16 +23,6 @@ if (__name__ == '__main__'):
     print "Loading the data"
     
     t0 = time()
-           
-
-    # Checking operating system. Accessing folders is different in Windows and Unix based systems
-    # if platform == "win32":
-    #     X_pool, y_pool = load_svmlight_file("data\\imdb-binary-pool-mindf5-ng11", n_features=27272)
-    #     X_test, y_test = load_svmlight_file("data\\imdb-binary-test-mindf5-ng11", n_features=27272)
-        
-    # elif platform == "linux" or platform == "linux2" or platform == "darwin":
-    #     X_pool, y_pool = load_svmlight_file("data/imdb-binary-pool-mindf5-ng11", n_features=27272)
-    #     X_test, y_test = load_svmlight_file("data/imdb-binary-test-mindf5-ng11", n_features=27272)
 
     parser = argparse.ArgumentParser()
 
@@ -66,17 +55,12 @@ if (__name__ == '__main__'):
     print
 
     numtrials = args.numTrials
-    # numtrials = 10
     strategy = args.strategy
 
     bootStrapSize = args.sizes[0]
-    # bootStrapSize = 2
     budget = args.sizes[1]
-    # budget = 500
     stepSize = args.sizes[2]
-    # stepSize = 2
     sub_pool = args.sizes[3]
-    # sub_pool = 250    
     
     alpha=1
     
@@ -99,8 +83,6 @@ if (__name__ == '__main__'):
         trainIndices = []
         
         bootsrapped = False
-        
-        #'log', 'rand', 'rot','unc'
 
         if strategy == 'log':
             activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
@@ -143,12 +125,6 @@ if (__name__ == '__main__'):
             
             accu = metrics.accuracy_score(y_test, pred_y)
             
-    
-            #print "train size:\t%d" % len(trainIndices)
-            #print "accu:\t%0.3f" % accu
-            #print "auc:\t%0.3f" % auc
-            #print
-            
             accuracies[len(trainIndices)].append(accu)
             aucs[len(trainIndices)].append(auc)
     
@@ -164,7 +140,6 @@ if (__name__ == '__main__'):
     print
     print "Train_size\tAccu_Mean\tAccu_Std"
     for a, b, c in zip(x, y, z):
-        #print "%0.3f" % b
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
     
     x = sorted(aucs.keys())
@@ -174,7 +149,6 @@ if (__name__ == '__main__'):
     print
     print "Train_size\tAUC_Mean\tAUC_Std"
     for a, b, c in zip(x, y, z):
-        #print "%0.3f" % b
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
         
     duration = time() - t0
