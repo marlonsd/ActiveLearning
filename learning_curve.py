@@ -2,6 +2,9 @@
 Created on Jan 30, 2014
 
 @author: mbilgic
+
+For now, the program is handling just binary classification
+
 '''
 
 from time import time
@@ -31,7 +34,7 @@ if (__name__ == '__main__'):
                         help='Files that contains the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
     parser.add_argument("-nt", "--numTrials", type=int, default=10, help="Number of trials (default: 10).")
-    parser.add_argument("-st", "--strategy", choices=['log', 'rand', 'rot','unc'], default='rand',
+    parser.add_argument("-st", "--strategy", choices=['loggain', 'rand','unc'], default='rand',
                         help="Represent the base strategy for choosing next samples (default: rand).")
     parser.add_argument("-s", '--sizes', nargs=4, metavar=('bootstrap', 'budget', 'stepsize', 'subpool'),
                         default=[2, 500, 2, 250], type=int, help='Bootsrap, budget, \
@@ -84,16 +87,12 @@ if (__name__ == '__main__'):
         
         bootsrapped = False
 
-        if strategy == 'log':
+        if strategy == 'loggain':
             activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
         elif strategy == 'rand':    
             activeS = RandomStrategy(seed=t)
-        elif strategy == 'rot':
-            activeS = RotateStrategy(strategies = [UncStrategy(seed=t, sub_pool = sub_pool), LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)])
-        else:
-            activeS = UncStrategy(seed=t, sub_pool = sub_pool)       
-        
-        
+        elif strategy == 'unc':
+            activeS = UncStrategy(seed=t, sub_pool = sub_pool)
 
         
         model = None
