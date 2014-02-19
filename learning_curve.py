@@ -20,6 +20,8 @@ from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, Ro
 
 from collections import defaultdict
 
+import matplotlib.pyplot as plt # Plotting
+
 
 if (__name__ == '__main__'):
     
@@ -31,7 +33,7 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser()
 
     # Data
-    parser.add_argument("-d", '--data', nargs=3, metavar=('pool', 'test'),
+    parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
                         default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11"],
                         help='Files that contains the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
@@ -161,17 +163,29 @@ if (__name__ == '__main__'):
     print "Train_size\tAccu_Mean\tAccu_Std"
     for a, b, c in zip(x, y, z):
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
-    
-    x = sorted(aucs.keys())
-    y = [np.mean(aucs[xi]) for xi in x]
-    z = [np.std(aucs[xi]) for xi in x]
+
+    x2 = sorted(aucs.keys())
+    y2 = [np.mean(aucs[xi]) for xi in x]
+    z2 = [np.std(aucs[xi]) for xi in x]
     
     print
     print "Train_size\tAUC_Mean\tAUC_Std"
-    for a, b, c in zip(x, y, z):
+    for a, b, c in zip(x2, y2, z2):
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
         
     duration = time() - t0
+
+    plt.figure(1)
+    plt.subplot(211)
+    plt.plot(x, y, 'bo', x, z, 'k')
+    plt.title('Fig 1')
+
+    plt.figure(2)
+    plt.subplot(212)
+    plt.plot(x2, y2, 'r--', x2, z2, 'k')
+    plt.title('Fig 2')
+
+    plt.show()
 
     print
     print "Learning curve took %0.2fs." % duration
