@@ -27,43 +27,61 @@ if (__name__ == '__main__'):
     
     t0 = time()
 
+    ### Arguments Treatment ###
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-d", '--data', nargs=3, metavar=('pool', 'test', 'features'),
-                        default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11" ,27272],
+    # Data
+    parser.add_argument("-d", '--data', nargs=3, metavar=('pool', 'test'),
+                        default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11"],
                         help='Files that contains the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
-    parser.add_argument("-nt", "--numTrials", type=int, default=10, help="Number of trials (default: 10).")
+
+    # Number of Trials
+    parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
+
+    # Strategy
     parser.add_argument("-st", "--strategy", choices=['loggain', 'rand','unc'], default='rand',
                         help="Represent the base strategy for choosing next samples (default: rand).")
-    parser.add_argument("-s", '--sizes', nargs=4, metavar=('bootstrap', 'budget', 'stepsize', 'subpool'),
-                        default=[2, 500, 2, 250], type=int, help='Bootsrap, budget, \
-                        step size and sub pool (default: 10 510 10 250).')
+
+    # Boot Strap
+    parser.add_argument("-bs", '--bootstrap', default=10, type=int, 
+                        help='Sets the Boot strap (default: 10).')
+    
+    # Budget
+    parser.add_argument("-b", '--budget', default=500, type=int,
+                        help='Sets the budget (default: 500).')
+
+    # Step size
+    parser.add_argument("-sz", '--stepsize', default=10, type=int,
+                        help='Sets the step size (default: 10).')
+
+    # Sub pool size
+    parser.add_argument("-sp", '--subpool', default=250, type=int,
+                        help='Sets the sub pool size (default: 250).')
 
     args = parser.parse_args()
 
-    dataPool = args.data[0]
-    dataTest = args.data[1]
-    n_features = args.data[2]
+    data_pool = args.data[0]
+    data_test = args.data[1]
 
-    X_pool, y_pool = load_svmlight_file(dataPool, n_features=n_features)
-    X_test, y_test = load_svmlight_file(dataTest, n_features=n_features)
+    X_pool, y_pool = load_svmlight_file(data_pool)
+    num_pool, num_feat = X_pool.shape
+
+    X_test, y_test = load_svmlight_file(data_test, n_features=num_feat)
 
     duration = time() - t0
-    
-    num_pool, num_feat = X_pool.shape
 
     print
     print "Loading took %0.2fs." % duration
     print
 
-    numtrials = args.numTrials
+    num_trials = args.num_trials
     strategy = args.strategy
 
-    bootStrapSize = args.sizes[0]
-    budget = args.sizes[1]
-    stepSize = args.sizes[2]
-    sub_pool = args.sizes[3]
+    boot_strap_size = args.bootstrap
+    budget = args.budget
+    step_size = args.stepsize
+    sub_pool = args.subpool
     
     alpha=1
     
@@ -75,7 +93,8 @@ if (__name__ == '__main__'):
     
     t0 = time()
     
-    for t in range(numtrials):
+    # Main Loop
+    for t in range(num_trials):
         
         print "trial", t
         
@@ -87,6 +106,7 @@ if (__name__ == '__main__'):
         
         bootsrapped = False
 
+        # Choosing strategy
         if strategy == 'loggain':
             activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
         elif strategy == 'rand':    
@@ -96,16 +116,16 @@ if (__name__ == '__main__'):
 
         
         model = None
-                    
-        while len(trainIndices) < budget and len(pool) > stepSize:
-            
+        
+        # Loop for prediction
+        while len(trainIndices) < budget and len(pool) > step_size:
             
             if not bootsrapped:
                 bootS = BootstrapFromEach(t)
-                newIndices = bootS.bootstrap(pool, y=y_pool, k=bootStrapSize)
+                newIndices = bootS.bootstrap(pool, y=y_pool, k=boot_strap_size)
                 bootsrapped = True
             else:
-                newIndices = activeS.chooseNext(pool, X_pool_csr, model, k = stepSize, current_train_indices = trainIndices, current_train_y = y_pool[trainIndices])
+                newIndices = activeS.chooseNext(pool, X_pool_csr, model, k = step_size, current_train_indices = trainIndices, current_train_y = y_pool[trainIndices])
             
             pool.difference_update(newIndices)
             
@@ -115,9 +135,10 @@ if (__name__ == '__main__'):
             
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
-           
-    
+           # Prediction
             y_probas = model.predict_proba(X_test)
+
+            # Metrics
             auc = metrics.roc_auc_score(y_test, y_probas[:,1])     
             
             pred_y = model.classes_[np.argmax(y_probas, axis=1)]
