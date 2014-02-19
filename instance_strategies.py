@@ -75,6 +75,52 @@ class UncStrategy(BaseStrategy):
         chosen = [candidates[i] for i in uis[:k]]       
         return chosen
 
+class QBCStrategy(BaseStrategy):
+    
+    def __init__(self, seed=0, sub_pool = None, num_committee = 4, classifier, **classifier_args):
+        super(QBCStrategy, self).__init__(seed=seed)
+        self.sub_pool = sub_pool
+        self.num_committee = num_committee
+        self.classifier = classifier
+        self.classifier_args = classifier_args
+        
+    
+    def chooseNext(self, pool, X=None, model=None, k=1, current_train_indices = None, current_train_y = None):
+        
+        num_candidates = len(pool)
+        
+        if self.sub_pool is not None:
+            num_candidates = self.sub_pool
+        
+        rand_indices = self.randgen.permutation(len(pool))        
+        list_pool = list(pool)        
+        candidates = [list_pool[i] for i in rand_indices[:num_candidates]]
+        
+        if ss.issparse(X):
+            if not ss.isspmatrix_csr(X):
+                X = X.tocsr()
+        
+        # Create bags
+        
+        comm_predictions = []
+        
+        for c in range(self.num_committee):
+            r_inds = self.randgen.randint(0, len(current_train_indices), size=len(current_train_indices))
+            bag = [current_train_indices[i] for i in r_inds]
+            bag_y = [current_train_y[i] for i in r_inds]
+            new_classifier = self.classifier(**self.classifier_args)
+            new_classifier.fit(X[bag], bag_y)
+            
+            predictions = new_classifier.predict(X[candidates])
+            
+            comm_predictions.append(predictions)
+        
+        # Compute disagreement for com_predictions
+        
+        # choose the ones that are most disagreed
+        
+        return None
+
 class LogGainStrategy(BaseStrategy):
     
     def __init__(self, classifier, seed = 0, sub_pool = None, **classifier_args):
