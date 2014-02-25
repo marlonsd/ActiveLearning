@@ -10,6 +10,7 @@ For now, the program is handling just binary classification
 from time import time
 
 import argparse # To use arguments
+import math
 import numpy as np
 import sys
 
@@ -154,6 +155,10 @@ if (__name__ == '__main__'):
             aucs[len(trainIndices)].append(auc)
     
     duration = time() - t0
+
+    print
+    print "Learning curve took %0.2fs." % duration
+    print
     
     
     # print the accuracies
@@ -167,31 +172,27 @@ if (__name__ == '__main__'):
     for a, b, c in zip(x, y, z):
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
 
-    x2 = sorted(aucs.keys())
-    y2 = [np.mean(aucs[xi]) for xi in x]
-    z2 = [np.std(aucs[xi]) for xi in x]
+    plt.figure(1)
+    plt.subplot(211)
+    # plt.plot(x, y)
+    # std = [(z[i]/math.sqrt(num_trials)) for i in range(len(z))]
+    plt.errorbar(x,y,yerr=z)
+    plt.title('Accuracy')
+
+    x = sorted(aucs.keys())
+    y = [np.mean(aucs[xi]) for xi in x]
+    z = [np.std(aucs[xi]) for xi in x]
     
     print
     print "Train_size\tAUC_Mean\tAUC_Std"
-    for a, b, c in zip(x2, y2, z2):
+    for a, b, c in zip(x, y, z):
         print "%d\t%0.3f\t%0.3f" % (a, b, c)
         
-    duration = time() - t0
 
-    plt.figure(1)
-    plt.subplot(211)
-    plt.plot(x, y, 'bo', x, z, 'k')
-    plt.title('Fig 1')
-
-    plt.figure(2)
     plt.subplot(212)
-    plt.plot(x2, y2, 'r--', x2, z2, 'k')
-    plt.title('Fig 2')
+    plt.errorbar(x,y,yerr=z)
+    plt.title('Mean')
 
     plt.show()
-
-    print
-    print "Learning curve took %0.2fs." % duration
-    print
     
 
