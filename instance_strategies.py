@@ -91,11 +91,11 @@ class QBCStrategy(BaseStrategy):
     def chooseNext(self, pool, X=None, model=None, k=1, current_train_indices = None, current_train_y = None):
          
         def entropy(sample):
-            index = defaultdict(lambda: 0)
+            index = defaultdict(lambda: 0.0)
             size = float(len(sample))
 
             for i in sample:
-                index[i] += 1
+                index[i] += 1.0
 
             out = 0
             for i in index:
