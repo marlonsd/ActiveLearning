@@ -2,8 +2,11 @@
 Created on Jan 28, 2014
 
 @author: mbilgic
+
+For now, the program is handling just binary classification
 '''
 
+import math
 import numpy as np
 import scipy.sparse as ss
 from collections import defaultdict
@@ -77,7 +80,7 @@ class UncStrategy(BaseStrategy):
 
 class QBCStrategy(BaseStrategy):
     
-    def __init__(self, seed=0, sub_pool = None, num_committee = 4, classifier, **classifier_args):
+    def __init__(self, classifier, classifier_args, seed=0, sub_pool = None, num_committee = 4):
         super(QBCStrategy, self).__init__(seed=seed)
         self.sub_pool = sub_pool
         self.num_committee = num_committee
@@ -86,7 +89,21 @@ class QBCStrategy(BaseStrategy):
         
     
     def chooseNext(self, pool, X=None, model=None, k=1, current_train_indices = None, current_train_y = None):
-        
+         
+        def entropy(sample):
+            index = defaultdict(lambda: 0)
+            size = float(len(sample))
+
+            for i in sample:
+                index[i] += 1
+
+            out = 0
+            for i in index:
+                aux = (float(index[i]/size))
+                out += (aux*math.log(aux, 2))
+
+            return -out
+
         num_candidates = len(pool)
         
         if self.sub_pool is not None:
@@ -108,7 +125,7 @@ class QBCStrategy(BaseStrategy):
             r_inds = self.randgen.randint(0, len(current_train_indices), size=len(current_train_indices))
             bag = [current_train_indices[i] for i in r_inds]
             bag_y = [current_train_y[i] for i in r_inds]
-            new_classifier = self.classifier(**self.classifier_args)
+            new_classifier = self.classifier(self.classifier_args)
             new_classifier.fit(X[bag], bag_y)
             
             predictions = new_classifier.predict(X[candidates])
@@ -116,10 +133,21 @@ class QBCStrategy(BaseStrategy):
             comm_predictions.append(predictions)
         
         # Compute disagreement for com_predictions
-        
+
+        candidates_predictions = []
+        for i in range(len(comm_predictions[0])):
+            aux_candidates = []
+            for prediction in comm_predictions:
+                aux_candidates.append(prediction[i])
+            disagreement = entropy(aux_candidates)
+            candidates_predictions.append([i, disagreement])
+
         # choose the ones that are most disagreed
+        candidates_predictions = sorted(candidates_predictions, key=lambda x:x[1], reverse=True)
+        chosen = [candidates[position[0]] for position in candidates_predictions[:k]]
+
         
-        return None
+        return chosen
 
 class LogGainStrategy(BaseStrategy):
     
