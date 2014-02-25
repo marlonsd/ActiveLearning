@@ -11,12 +11,13 @@ from time import time
 
 import argparse # To use arguments
 import numpy as np
+import sys
 
 from sklearn import metrics
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.datasets import load_svmlight_file
 
-from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach
+from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy
 
 from collections import defaultdict
 
@@ -42,7 +43,7 @@ if (__name__ == '__main__'):
     parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
 
     # Strategy
-    parser.add_argument("-st", "--strategy", choices=['loggain', 'rand','unc'], default='rand',
+    parser.add_argument("-st", "--strategy", choices=['loggain', 'qbc', 'rand','unc'], default='rand',
                         help="Represent the base strategy for choosing next samples (default: rand).")
 
     # Boot Strap
@@ -111,6 +112,8 @@ if (__name__ == '__main__'):
         # Choosing strategy
         if strategy == 'loggain':
             activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
+        elif strategy == 'qbc':
+            activeS = QBCStrategy(classifier=MultinomialNB, classifier_args=alpha)
         elif strategy == 'rand':    
             activeS = RandomStrategy(seed=t)
         elif strategy == 'unc':
@@ -118,7 +121,7 @@ if (__name__ == '__main__'):
 
         
         model = None
-        
+
         # Loop for prediction
         while len(trainIndices) < budget and len(pool) > step_size:
             
