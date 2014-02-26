@@ -166,6 +166,7 @@ if (__name__ == '__main__'):
     x = sorted(accuracies.keys())
     y = [np.mean(accuracies[xi]) for xi in x]
     z = [np.std(accuracies[xi]) for xi in x]
+    e = np.array(z) / math.sqrt(num_trials)
     
     print
     print "Train_size\tAccu_Mean\tAccu_Std"
@@ -176,12 +177,13 @@ if (__name__ == '__main__'):
     plt.subplot(211)
     # plt.plot(x, y)
     # std = [(z[i]/math.sqrt(num_trials)) for i in range(len(z))]
-    plt.errorbar(x,y,yerr=z)
+    plt.errorbar(x,y,yerr=e)
     plt.title('Accuracy')
 
     x = sorted(aucs.keys())
     y = [np.mean(aucs[xi]) for xi in x]
     z = [np.std(aucs[xi]) for xi in x]
+    e = np.array(z) / math.sqrt(num_trials)
     
     print
     print "Train_size\tAUC_Mean\tAUC_Std"
@@ -190,8 +192,8 @@ if (__name__ == '__main__'):
         
 
     plt.subplot(212)
-    plt.errorbar(x,y,yerr=z)
-    plt.title('Mean')
+    plt.errorbar(x,y,yerr=e)
+    plt.title('AUC')
 
     plt.show()
     
