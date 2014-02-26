@@ -100,9 +100,9 @@ class QBCStrategy(BaseStrategy):
             out = 0
             for i in index:
                 aux = (float(index[i]/size))
-                out += (aux*math.log(aux, 2))
+                out += ((aux*math.log(aux, 2))*-1.)
 
-            return -out
+            return out
 
         num_candidates = len(pool)
         
