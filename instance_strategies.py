@@ -88,21 +88,23 @@ class QBCStrategy(BaseStrategy):
         self.classifier_args = classifier_args
         
     
+    def vote_entropy(self, sample):
+        """ Computes vote entropy. """
+        votes = defaultdict(lambda: 0.0)
+        size = float(len(sample))
+
+        for i in sample:
+            votes[i] += 1.0
+
+        out = 0
+        for i in votes:
+            aux = (float(votes[i]/size))
+            out += ((aux*math.log(aux, 2))*-1.)
+
+        return out
+    
     def chooseNext(self, pool, X=None, model=None, k=1, current_train_indices = None, current_train_y = None):
          
-        def entropy(sample):
-            index = defaultdict(lambda: 0.0)
-            size = float(len(sample))
-
-            for i in sample:
-                index[i] += 1.0
-
-            out = 0
-            for i in index:
-                aux = (float(index[i]/size))
-                out += ((aux*math.log(aux, 2))*-1.)
-
-            return out
 
         num_candidates = len(pool)
         
@@ -134,18 +136,16 @@ class QBCStrategy(BaseStrategy):
         
         # Compute disagreement for com_predictions
 
-        candidates_predictions = []
+        disagreements = []
         for i in range(len(comm_predictions[0])):
             aux_candidates = []
             for prediction in comm_predictions:
                 aux_candidates.append(prediction[i])
-            disagreement = entropy(aux_candidates)
-            candidates_predictions.append([i, disagreement])
-
-        # choose the ones that are most disagreed
-        candidates_predictions = sorted(candidates_predictions, key=lambda x:x[1], reverse=True)
-        chosen = [candidates[position[0]] for position in candidates_predictions[:k]]
-
+            disagreement = self.vote_entropy(aux_candidates)
+            disagreements.append(disagreement)
+        
+        dis = np.argsort(disagreements)[::-1]
+        chosen = [candidates[i] for i in dis[:k]]
         
         return chosen
 
