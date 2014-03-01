@@ -25,6 +25,64 @@ from collections import defaultdict
 import matplotlib.pyplot as plt # Plotting
 
 
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, accuracies):
+    for t in range(num_trials):
+        
+        print "trial", t
+        
+        X_pool_csr = X_pool.tocsr()
+    
+        pool = set(range(len(y_pool)))
+        
+        trainIndices = []
+        
+        bootsrapped = False
+
+        # Choosing strategy
+        if strategy == 'loggain':
+            active_s = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
+        elif strategy == 'qbc':
+            active_s = QBCStrategy(classifier=MultinomialNB, classifier_args=alpha)
+        elif strategy == 'rand':    
+            active_s = RandomStrategy(seed=t)
+        elif strategy == 'unc':
+            active_s = UncStrategy(seed=t, sub_pool = sub_pool)
+
+        
+        model = None
+
+        # Loop for prediction
+        while len(trainIndices) < budget and len(pool) > step_size:
+            
+            if not bootsrapped:
+                boot_s = BootstrapFromEach(t)
+                newIndices = boot_s.bootstrap(pool, y=y_pool, k=boot_strap_size)
+                bootsrapped = True
+            else:
+                newIndices = active_s.chooseNext(pool, X_pool_csr, model, k = step_size, current_train_indices = trainIndices, current_train_y = y_pool[trainIndices])
+            
+            pool.difference_update(newIndices)
+            
+            trainIndices.extend(newIndices)
+    
+            model = MultinomialNB(alpha=alpha)
+            
+            model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
+            
+           # Prediction
+            y_probas = model.predict_proba(X_test)
+
+            # Metrics
+            auc = metrics.roc_auc_score(y_test, y_probas[:,1])     
+            
+            pred_y = model.classes_[np.argmax(y_probas, axis=1)]
+            
+            accu = metrics.accuracy_score(y_test, pred_y)
+            
+            accuracies[len(trainIndices)].append(accu)
+            aucs[len(trainIndices)].append(auc)
+    
+
 if (__name__ == '__main__'):
     
     print "Loading the data"
@@ -43,9 +101,10 @@ if (__name__ == '__main__'):
     # Number of Trials
     parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
 
-    # Strategy
-    parser.add_argument("-st", "--strategy", choices=['loggain', 'qbc', 'rand','unc'], default='rand',
-                        help="Represent the base strategy for choosing next samples (default: rand).")
+    # Strategies
+    # Usage: -st rand qbc
+    parser.add_argument("-st", "--strategies", choices=['loggain', 'qbc', 'rand','unc'], nargs='*',default='rand',
+                        help="Represent a list of strategies for choosing next samples (default: rand).")
 
     # Boot Strap
     parser.add_argument("-bs", '--bootstrap', default=10, type=int, 
@@ -80,7 +139,11 @@ if (__name__ == '__main__'):
     print
 
     num_trials = args.num_trials
-    strategy = args.strategy
+    strategies = args.strategies
+
+    print strategies
+
+    # sys.exit(0)
 
     boot_strap_size = args.bootstrap
     budget = args.budget
@@ -98,62 +161,10 @@ if (__name__ == '__main__'):
     t0 = time()
     
     # Main Loop
-    for t in range(num_trials):
-        
-        print "trial", t
-        
-        X_pool_csr = X_pool.tocsr()
-    
-        pool = set(range(len(y_pool)))
-        
-        trainIndices = []
-        
-        bootsrapped = False
+    # for strategy in strategies:
+    strategy = strategies[0]
+    learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, accuracies)
 
-        # Choosing strategy
-        if strategy == 'loggain':
-            activeS = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
-        elif strategy == 'qbc':
-            activeS = QBCStrategy(classifier=MultinomialNB, classifier_args=alpha)
-        elif strategy == 'rand':    
-            activeS = RandomStrategy(seed=t)
-        elif strategy == 'unc':
-            activeS = UncStrategy(seed=t, sub_pool = sub_pool)
-
-        
-        model = None
-
-        # Loop for prediction
-        while len(trainIndices) < budget and len(pool) > step_size:
-            
-            if not bootsrapped:
-                bootS = BootstrapFromEach(t)
-                newIndices = bootS.bootstrap(pool, y=y_pool, k=boot_strap_size)
-                bootsrapped = True
-            else:
-                newIndices = activeS.chooseNext(pool, X_pool_csr, model, k = step_size, current_train_indices = trainIndices, current_train_y = y_pool[trainIndices])
-            
-            pool.difference_update(newIndices)
-            
-            trainIndices.extend(newIndices)
-    
-            model = MultinomialNB(alpha=alpha)
-            
-            model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
-            
-           # Prediction
-            y_probas = model.predict_proba(X_test)
-
-            # Metrics
-            auc = metrics.roc_auc_score(y_test, y_probas[:,1])     
-            
-            pred_y = model.classes_[np.argmax(y_probas, axis=1)]
-            
-            accu = metrics.accuracy_score(y_test, pred_y)
-            
-            accuracies[len(trainIndices)].append(accu)
-            aucs[len(trainIndices)].append(auc)
-    
     duration = time() - t0
 
     print
