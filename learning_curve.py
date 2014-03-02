@@ -25,7 +25,10 @@ from collections import defaultdict
 import matplotlib.pyplot as plt # Plotting
 
 
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, accuracies):
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size):
+    accuracies = defaultdict(lambda: [])
+    aucs = defaultdict(lambda: [])    
+
     for t in range(num_trials):
         
         print "trial", t
@@ -81,6 +84,8 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             
             accuracies[len(trainIndices)].append(accu)
             aucs[len(trainIndices)].append(auc)
+
+    return accuracies, aucs
     
 
 if (__name__ == '__main__'):
@@ -141,10 +146,6 @@ if (__name__ == '__main__'):
     num_trials = args.num_trials
     strategies = args.strategies
 
-    print strategies
-
-    # sys.exit(0)
-
     boot_strap_size = args.bootstrap
     budget = args.budget
     step_size = args.stepsize
@@ -152,59 +153,104 @@ if (__name__ == '__main__'):
     
     alpha=1
     
+    duration = defaultdict(lambda: 0.0)
+
     accuracies = defaultdict(lambda: [])
     
     aucs = defaultdict(lambda: [])    
     
     num_test = X_test.shape[0]
-    
-    t0 = time()
-    
+
     # Main Loop
-    # for strategy in strategies:
-    strategy = strategies[0]
-    learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, accuracies)
+    for strategy in strategies:
+        t0 = time()
 
-    duration = time() - t0
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size)
 
-    print
-    print "Learning curve took %0.2fs." % duration
-    print
+        duration[strategy] = time() - t0
+
+        print
+        print "%s Learning curve took %0.2fs." % (strategy, duration[strategy])
+        print
     
     
+    values = sorted(accuracies[strategies[0]].keys())
+
     # print the accuracies
-    
-    x = sorted(accuracies.keys())
-    y = [np.mean(accuracies[xi]) for xi in x]
-    z = [np.std(accuracies[xi]) for xi in x]
-    e = np.array(z) / math.sqrt(num_trials)
-    
     print
-    print "Train_size\tAccu_Mean\tAccu_Std"
-    for a, b, c in zip(x, y, z):
-        print "%d\t%0.3f\t%0.3f" % (a, b, c)
-
-    plt.figure(1)
-    plt.subplot(211)
-    # plt.plot(x, y)
-    # std = [(z[i]/math.sqrt(num_trials)) for i in range(len(z))]
-    plt.errorbar(x,y,yerr=e)
-    plt.title('Accuracy')
-
-    x = sorted(aucs.keys())
-    y = [np.mean(aucs[xi]) for xi in x]
-    z = [np.std(aucs[xi]) for xi in x]
-    e = np.array(z) / math.sqrt(num_trials)
-    
+    print "\t\tAccuracy mean"
+    print "Train Size\t",
+    for strategy in strategies:
+        print "%s\t\t" % strategy,
     print
-    print "Train_size\tAUC_Mean\tAUC_Std"
-    for a, b, c in zip(x, y, z):
-        print "%d\t%0.3f\t%0.3f" % (a, b, c)
+
+    for value in values:
+        print "%d\t\t" % value,
+        for strategy in strategies:
+            print "%0.3f\t\t" % np.mean(accuracies[strategy][value]),
+        print
         
+    # print the aucs
+    print
+    print "\t\tAUC mean"
+    print "Train Size\t",
+    for strategy in strategies:
+        print "%s\t\t" % strategy,
+    print
 
-    plt.subplot(212)
-    plt.errorbar(x,y,yerr=e)
-    plt.title('AUC')
+    for value in values:
+        print "%d\t\t" % value,
+        for strategy in strategies:
+            print "%0.3f\t\t" % np.mean(aucs[strategy][value]),
+        print
+
+    # print the times
+    print
+    print "\t\tTime"
+    print "Strategy\tTime"
+
+    for strategy in strategies:
+        print "%s\t%0.2f" % (strategy, duration[strategy])
+
+    # plotting
+    for strategy in strategies:
+        accuracy = accuracies[strategy]
+        auc = aucs[strategy]
+
+
+        x = sorted(accuracy.keys())
+        y = [np.mean(accuracy[xi]) for xi in x]
+        z = [np.std(accuracy[xi]) for xi in x]
+        e = np.array(z) / math.sqrt(num_trials)
+        
+        # print
+        # print "Train_size\tAccu_Mean\tAccu_Std"
+        # for a, b, c in zip(x, y, z):
+        #     print "%d\t%0.3f\t%0.3f" % (a, b, c)
+
+        plt.figure(1)
+        plt.subplot(211)
+        # plt.errorbar(x,y,yerr=e, label=strategy)
+        plt.plot(x, y, '-', label=strategy)
+        plt.legend(loc='best')
+        plt.title('Accuracy')
+
+        x = sorted(auc.keys())
+        y = [np.mean(auc[xi]) for xi in x]
+        z = [np.std(auc[xi]) for xi in x]
+        e = np.array(z) / math.sqrt(num_trials)
+        
+        # print
+        # print "Train_size\tAUC_Mean\tAUC_Std"
+        # for a, b, c in zip(x, y, z):
+        #     print "%d\t%0.3f\t%0.3f" % (a, b, c)
+            
+
+        plt.subplot(212)
+        # plt.errorbar(x,y,yerr=e, label=strategy)
+        plt.plot(x, y, '-', label=strategy)
+        plt.legend(loc='best')
+        plt.title('AUC')
 
     plt.show()
     
