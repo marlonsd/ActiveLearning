@@ -25,7 +25,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt # Plotting
 
 
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size):
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
 
@@ -108,7 +108,7 @@ if (__name__ == '__main__'):
 
     # Strategies
     # Usage: -st rand qbc
-    parser.add_argument("-st", "--strategies", choices=['loggain', 'qbc', 'rand','unc'], nargs='*',default='rand',
+    parser.add_argument("-st", "--strategies", choices=['loggain', 'qbc', 'rand','unc'], nargs='*',default=['rand'],
                         help="Represent a list of strategies for choosing next samples (default: rand).")
 
     # Boot Strap
@@ -165,7 +165,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         t0 = time()
 
-        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size)
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, alpha)
 
         duration[strategy] = time() - t0
 
