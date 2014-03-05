@@ -25,10 +25,10 @@ from collections import defaultdict
 import matplotlib.pyplot as plt # Plotting
 
 
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, alpha):
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
-
+    
     for t in range(num_trials):
         
         print "trial", t
@@ -43,9 +43,9 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
 
         # Choosing strategy
         if strategy == 'loggain':
-            active_s = LogGainStrategy(classifier=MultinomialNB, seed=t, sub_pool=sub_pool, alpha=alpha)
+            active_s = LogGainStrategy(classifier=classifier, seed=t, sub_pool=sub_pool, alpha=alpha)
         elif strategy == 'qbc':
-            active_s = QBCStrategy(classifier=MultinomialNB, classifier_args=alpha)
+            active_s = QBCStrategy(classifier=classifier, classifier_args=alpha)
         elif strategy == 'rand':    
             active_s = RandomStrategy(seed=t)
         elif strategy == 'unc':
@@ -68,7 +68,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             
             trainIndices.extend(newIndices)
     
-            model = MultinomialNB(alpha=alpha)
+            model = classifier(alpha=alpha)
             
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
@@ -96,6 +96,14 @@ if (__name__ == '__main__'):
 
     ### Arguments Treatment ###
     parser = argparse.ArgumentParser()
+
+    # Classifier
+    parser.add_argument("classifier", choices=['KNeighborsClassifier', 'SVC', 'SVC',
+                        'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
+                        help="Represents the classifier that will be used.")
+
+    # # Arguments
+    parser.add_argument("arguments", help="Represents the arguments that will be passed to the classifier.")    
 
     # Data
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
@@ -129,6 +137,25 @@ if (__name__ == '__main__'):
 
     args = parser.parse_args()
 
+    classifier = args.classifier
+
+    if classifier == 'KNeighborsClassifier':
+        classifier = KNeighborsClassifier
+    elif classifier == 'SVC':
+        classifier = SVC
+    elif classifier == 'DecisionTreeClassifier':
+        classifier = DecisionTreeClassifier
+    elif classifier == 'RandomForestClassifier':
+        classifier = RandomForestClassifier
+    elif classifier == 'AdaBoostClassifier':
+        classifier = AdaBoostClassifier
+    elif classifier == 'GaussianNB':
+        classifier = GaussianNB
+    elif classifier == 'MultinomialNB':
+        classifier = MultinomialNB
+
+    # alpha = args.arguments
+    
     data_pool = args.data[0]
     data_test = args.data[1]
 
@@ -165,7 +192,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         t0 = time()
 
-        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, alpha)
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha)
 
         duration[strategy] = time() - t0
 
@@ -253,5 +280,3 @@ if (__name__ == '__main__'):
         plt.title('AUC')
 
     plt.show()
-    
-
