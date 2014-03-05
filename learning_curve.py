@@ -103,7 +103,7 @@ if (__name__ == '__main__'):
                         help="Represents the classifier that will be used.")
 
     # # Arguments
-    parser.add_argument("arguments", help="Represents the arguments that will be passed to the classifier.")    
+    # parser.add_argument("arguments", help="Represents the arguments that will be passed to the classifier.")    
 
     # Data
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
