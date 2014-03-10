@@ -25,7 +25,7 @@ from collections import defaultdict
 import matplotlib.pyplot as plt # Plotting
 
 
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha):
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, **alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
     
@@ -68,7 +68,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             
             trainIndices.extend(newIndices)
     
-            model = classifier(alpha=alpha)
+            model = classifier(**alpha)
             
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
@@ -98,12 +98,13 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser()
 
     # Classifier
-    parser.add_argument("classifier", choices=['KNeighborsClassifier', 'SVC', 'SVC',
+    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'SVC', 'SVC',
                         'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
-                        help="Represents the classifier that will be used.")
+                        default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
     # # Arguments
-    # parser.add_argument("arguments", help="Represents the arguments that will be passed to the classifier.")    
+    parser.add_argument("-a","--arguments", default='alpha=1',
+                        help="Represents the arguments that will be passed to the classifier (default: alpha=1).")    
 
     # Data
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
@@ -137,24 +138,14 @@ if (__name__ == '__main__'):
 
     args = parser.parse_args()
 
-    classifier = args.classifier
+    classifier = eval(args.classifier)
 
-    if classifier == 'KNeighborsClassifier':
-        classifier = KNeighborsClassifier
-    elif classifier == 'SVC':
-        classifier = SVC
-    elif classifier == 'DecisionTreeClassifier':
-        classifier = DecisionTreeClassifier
-    elif classifier == 'RandomForestClassifier':
-        classifier = RandomForestClassifier
-    elif classifier == 'AdaBoostClassifier':
-        classifier = AdaBoostClassifier
-    elif classifier == 'GaussianNB':
-        classifier = GaussianNB
-    elif classifier == 'MultinomialNB':
-        classifier = MultinomialNB
+    model_arguments = args.arguments.split(',')
 
-    # alpha = args.arguments
+    alpha = {}
+    for argument in alpha:
+        index, value = argument.split('=')
+        new_alpha[index] = value
     
     data_pool = args.data[0]
     data_test = args.data[1]
@@ -178,7 +169,7 @@ if (__name__ == '__main__'):
     step_size = args.stepsize
     sub_pool = args.subpool
     
-    alpha=1
+    # alpha=1
     
     duration = defaultdict(lambda: 0.0)
 
@@ -192,7 +183,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         t0 = time()
 
-        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha)
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, **alpha)
 
         duration[strategy] = time() - t0
 
@@ -233,7 +224,7 @@ if (__name__ == '__main__'):
 
     # print the times
     print
-    print "\t\tTime"
+    print "\tTime"
     print "Strategy\tTime"
 
     for strategy in strategies:
@@ -249,11 +240,6 @@ if (__name__ == '__main__'):
         y = [np.mean(accuracy[xi]) for xi in x]
         z = [np.std(accuracy[xi]) for xi in x]
         e = np.array(z) / math.sqrt(num_trials)
-        
-        # print
-        # print "Train_size\tAccu_Mean\tAccu_Std"
-        # for a, b, c in zip(x, y, z):
-        #     print "%d\t%0.3f\t%0.3f" % (a, b, c)
 
         plt.figure(1)
         plt.subplot(211)
@@ -266,11 +252,6 @@ if (__name__ == '__main__'):
         y = [np.mean(auc[xi]) for xi in x]
         z = [np.std(auc[xi]) for xi in x]
         e = np.array(z) / math.sqrt(num_trials)
-        
-        # print
-        # print "Train_size\tAUC_Mean\tAUC_Std"
-        # for a, b, c in zip(x, y, z):
-        #     print "%d\t%0.3f\t%0.3f" % (a, b, c)
             
 
         plt.subplot(212)
