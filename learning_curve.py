@@ -18,14 +18,14 @@ from sklearn import metrics
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.datasets import load_svmlight_file
 
-from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy
+from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy, ErrorReductionStrategy
 
 from collections import defaultdict
 
 import matplotlib.pyplot as plt # Plotting
 
 
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, **alpha):
+def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
     
@@ -42,8 +42,10 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
         bootsrapped = False
 
         # Choosing strategy
-        if strategy == 'loggain':
-            active_s = LogGainStrategy(classifier=classifier, seed=t, sub_pool=sub_pool, alpha=alpha)
+        if strategy == 'erreduct':
+            active_s = ErrorReductionStrategy(classifier=classifier, seed=t, sub_pool=sub_pool, classifier_args=alpha)
+        elif strategy == 'loggain':
+            active_s = LogGainStrategy(classifier=classifier, seed=t, sub_pool=sub_pool, classifier_args=alpha)
         elif strategy == 'qbc':
             active_s = QBCStrategy(classifier=classifier, classifier_args=alpha)
         elif strategy == 'rand':    
@@ -117,7 +119,7 @@ if (__name__ == '__main__'):
 
     # Strategies
     # Usage: -st rand qbc
-    parser.add_argument("-st", "--strategies", choices=['loggain', 'qbc', 'rand','unc'], nargs='*',default=['rand'],
+    parser.add_argument("-st", "--strategies", choices=['erreduct', 'loggain', 'qbc', 'rand','unc'], nargs='*',default=['rand'],
                         help="Represent a list of strategies for choosing next samples (default: rand).")
 
     # Boot Strap
@@ -183,7 +185,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         t0 = time()
 
-        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, **alpha)
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha)
 
         duration[strategy] = time() - t0
 
