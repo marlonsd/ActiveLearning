@@ -10,6 +10,7 @@ import math
 import numpy as np
 import scipy.sparse as ss
 from collections import defaultdict
+import sys
 
 class RandomBootstrap(object):
     def __init__(self, seed):
@@ -215,12 +216,12 @@ class ErrorReductionStrategy(BaseStrategy):
         self.sub_pool = sub_pool
         self.classifier_args = classifier_args
     
-    def log_loss(self, probs, labels):
+    def log_loss(self, probs):
         ll = 0
 
         for i in xrange(len(probs)):
-            for j in xrange(len(labels)):
-                ll -= (probs[i][int(labels[j])]*np.log(probs[i][int(labels[j])]))
+            for prob in probs[i]:
+                ll -= (prob*np.log(prob))
 
         return ll/(len(probs)*1.)
     
@@ -231,7 +232,7 @@ class ErrorReductionStrategy(BaseStrategy):
         if self.sub_pool is not None:
             num_candidates = self.sub_pool
         
-        list_pool = list(pool)
+        list_pool = list(pool) #X[list_pool] = Unlabeled data = U = p
         
         
         #random candidates
@@ -256,8 +257,8 @@ class ErrorReductionStrategy(BaseStrategy):
                 new_train_y.append(c)
                 new_classifier = self.classifier(**self.classifier_args)
                 new_classifier.fit(X[new_train_inds], new_train_y)
-                new_probs = new_classifier.predict_proba(X[current_train_indices])
-                util += cand_probs[i][c] * self.log_loss(new_probs, current_train_y)
+                new_probs = new_classifier.predict_proba(X[candidates]) #X[current_train_indices] = labeled = L
+                util += cand_probs[i][c] * self.log_loss(new_probs)
             
             utils.append(util)
         

@@ -100,7 +100,7 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser()
 
     # Classifier
-    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'SVC', 'SVC',
+    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'SVC',
                         'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
                         default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
