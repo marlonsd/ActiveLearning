@@ -12,6 +12,7 @@ from time import time
 import argparse # To use arguments
 import math
 import numpy as np
+
 import sys
 
 from sklearn import metrics
@@ -113,6 +114,10 @@ if (__name__ == '__main__'):
                         default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11"],
                         help='Files that contains the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
+    # File
+    parser.add_argument("-f", '--file', type=str, default=[''],
+                        help='This feature represents the name that will be written with the result. \
+                        If it is left blank, the file will not be written (default: '' ).')
 
     # Number of Trials
     parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
@@ -171,7 +176,7 @@ if (__name__ == '__main__'):
     step_size = args.stepsize
     sub_pool = args.subpool
     
-    # alpha=1
+    filename = args.file
     
     duration = defaultdict(lambda: 0.0)
 
@@ -232,11 +237,13 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         print "%s\t%0.2f" % (strategy, duration[strategy])
 
+    if filename:
+        doc = open(filename, 'w')
+
     # plotting
     for strategy in strategies:
         accuracy = accuracies[strategy]
         auc = aucs[strategy]
-
 
         x = sorted(accuracy.keys())
         y = [np.mean(accuracy[xi]) for xi in x]
@@ -250,16 +257,32 @@ if (__name__ == '__main__'):
         plt.legend(loc='best')
         plt.title('Accuracy')
 
+        if filename:
+            doc.write(strategy+'\n'+'accuracy'+'\n')
+            doc.write('train size,mean,standard error'+'\n')
+            for i in range(len(y)):
+                doc.write("%d,%f,%f\n" % (values[i],y[i], e[i]))
+            doc.write('\n')
+
         x = sorted(auc.keys())
         y = [np.mean(auc[xi]) for xi in x]
         z = [np.std(auc[xi]) for xi in x]
         e = np.array(z) / math.sqrt(num_trials)
-            
+          
 
         plt.subplot(212)
         # plt.errorbar(x,y,yerr=e, label=strategy)
         plt.plot(x, y, '-', label=strategy)
         plt.legend(loc='best')
         plt.title('AUC')
+
+        if filename:
+            doc.write('AUC'+'\n')
+            doc.write('train size,mean,standard error'+'\n')
+            for i in range(len(y)):
+                doc.write("%d,%f,%f\n" % (values[i],y[i], e[i]))
+            doc.write('\n')
+            doc.write('\n')
+            doc.write('\n')
 
     plt.show()
