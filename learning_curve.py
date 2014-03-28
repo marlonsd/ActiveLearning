@@ -259,9 +259,9 @@ if (__name__ == '__main__'):
 
         if filename:
             doc.write(strategy+'\n'+'accuracy'+'\n')
-            doc.write('train size,mean,standard error'+'\n')
+            doc.write('train size,mean,standard deviation,standard error'+'\n')
             for i in range(len(y)):
-                doc.write("%d,%f,%f\n" % (values[i],y[i], e[i]))
+                doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
             doc.write('\n')
 
         x = sorted(auc.keys())
@@ -278,11 +278,9 @@ if (__name__ == '__main__'):
 
         if filename:
             doc.write('AUC'+'\n')
-            doc.write('train size,mean,standard error'+'\n')
+            doc.write('train size,mean,standard deviation,standard error'+'\n')
             for i in range(len(y)):
-                doc.write("%d,%f,%f\n" % (values[i],y[i], e[i]))
-            doc.write('\n')
-            doc.write('\n')
-            doc.write('\n')
+                doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
+            doc.write('\n\n\n')
 
     plt.show()
