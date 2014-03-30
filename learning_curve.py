@@ -115,7 +115,7 @@ if (__name__ == '__main__'):
                         help='Files that contains the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
     # File
-    parser.add_argument("-f", '--file', type=str, default=[''],
+    parser.add_argument("-f", '--file', type=str, default='',
                         help='This feature represents the name that will be written with the result. \
                         If it is left blank, the file will not be written (default: '' ).')
 
@@ -123,7 +123,7 @@ if (__name__ == '__main__'):
     parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
 
     # Strategies
-    # Usage: -st rand qbc
+    # Usage: -st loggain qbc rand unc
     parser.add_argument("-st", "--strategies", choices=['erreduct', 'loggain', 'qbc', 'rand','unc'], nargs='*',default=['rand'],
                         help="Represent a list of strategies for choosing next samples (default: rand).")
 
@@ -177,6 +177,7 @@ if (__name__ == '__main__'):
     sub_pool = args.subpool
     
     filename = args.file
+    print "filename:", filename
     
     duration = defaultdict(lambda: 0.0)
 
@@ -283,4 +284,6 @@ if (__name__ == '__main__'):
                 doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
             doc.write('\n\n\n')
 
+    if filename:
+        doc.close()
     plt.show()
