@@ -177,7 +177,6 @@ if (__name__ == '__main__'):
     sub_pool = args.subpool
     
     filename = args.file
-    print "filename:", filename
     
     duration = defaultdict(lambda: 0.0)
 
