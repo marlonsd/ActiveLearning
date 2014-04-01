@@ -52,7 +52,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
         elif strategy == 'rand':    
             active_s = RandomStrategy(seed=t)
         elif strategy == 'unc':
-            active_s = UncStrategy(seed=t, sub_pool = sub_pool)
+            active_s = UncStrategy(seed=t, sub_pool=sub_pool)
 
         
         model = None
@@ -106,8 +106,8 @@ if (__name__ == '__main__'):
                         default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
     # # Arguments
-    parser.add_argument("-a","--arguments", default='alpha=1',
-                        help="Represents the arguments that will be passed to the classifier (default: alpha=1).")    
+    parser.add_argument("-a","--arguments", default='',
+                        help="Represents the arguments that will be passed to the classifier (default: '').")    
 
     # Data
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
@@ -150,10 +150,12 @@ if (__name__ == '__main__'):
     model_arguments = args.arguments.split(',')
 
     alpha = {}
-    for argument in alpha:
-        index, value = argument.split('=')
-        new_alpha[index] = value
-    
+
+    for argument in model_arguments:
+        if argument.find('=') >= 0:
+            index, value = argument.split('=')
+            alpha[index] = eval(value)
+
     data_pool = args.data[0]
     data_test = args.data[1]
 
@@ -246,6 +248,8 @@ if (__name__ == '__main__'):
         auc = aucs[strategy]
 
         x = sorted(accuracy.keys())
+        # y = [np.mean(accuracy[xi]) for xi in x]
+        # z = [np.std(accuracy[xi]) for xi in x]
         y = [np.mean(accuracy[xi]) for xi in x]
         z = [np.std(accuracy[xi]) for xi in x]
         e = np.array(z) / math.sqrt(num_trials)
