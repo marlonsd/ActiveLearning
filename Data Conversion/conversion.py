@@ -13,7 +13,8 @@ def conversion_features(dataset):
 	binary_features = []
 
 	lb = preprocessing.LabelBinarizer()
-	min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))
+	min_max_scaler = preprocessing.MinMaxScaler()#feature_range=(-1, 1))
+	scaler = preprocessing.StandardScaler()
 	binarizer = preprocessing.Binarizer()
 
 	# Converting features into string or float
@@ -45,8 +46,14 @@ def conversion_features(dataset):
 
 		# Binarization
 		elif pos in to_binarize:
-			new_values = min_max_scaler.fit([values]).transform([values])
-			new_values = binarizer.transform(new_values)
+			scaler.fit(values)
+			new_values = scaler.transform(values)
+			print min(new_values), max(new_values)
+			# new_values = min_max_scaler.fit_transform([new_values])
+			new_values = binarizer.transform([new_values])
+
+			# if 1 in new_values:
+			# 	print 'There is a least an one.'
 
 			new_array = [i for i in new_values[0]]
 
@@ -97,6 +104,6 @@ def load_arff(filename):
 def main():
 	x, y = load_arff('data/credit-g.arff')
 	x = conversion_features(x)
-	
+	print x
 if __name__=="__main__":
     main()
