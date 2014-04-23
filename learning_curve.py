@@ -16,8 +16,11 @@ import numpy as np
 import sys
 
 from sklearn import metrics
-from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB, GaussianNB
+from sklearn.linear_model import LogisticRegression
+
 from sklearn.datasets import load_svmlight_file
+from sklearn.cross_validation import train_test_split
 
 from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy, ErrorReductionStrategy
 
@@ -75,7 +78,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
-           # Prediction
+            # Prediction
             y_probas = model.predict_proba(X_test)
 
             # Metrics
@@ -88,6 +91,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             accuracies[len(trainIndices)].append(accu)
             aucs[len(trainIndices)].append(auc)
 
+    # print accuracies, aucs
     return accuracies, aucs
     
 
@@ -101,7 +105,7 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser()
 
     # Classifier
-    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'SVC',
+    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'LogisticRegression', 'SVC',
                         'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
                         default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
@@ -112,8 +116,13 @@ if (__name__ == '__main__'):
     # Data
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
                         default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11"],
-                        help='Files that contains the data, pool and test, and number of \
+                        help='Files that contain the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
+    
+    # Simple File
+    parser.add_argument("-sd", '--sdata', type=str, default='',
+                        help='Single file that contains the data, it will be splitted (default: None).')
+
     # File
     parser.add_argument("-f", '--file', type=str, default='',
                         help='This feature represents the name that will be written with the result. \
@@ -156,13 +165,32 @@ if (__name__ == '__main__'):
             index, value = argument.split('=')
             alpha[index] = eval(value)
 
-    data_pool = args.data[0]
-    data_test = args.data[1]
+    if args.sdata:
+        data = args.sdata
+        
+        X, y = load_svmlight_file(data)
 
-    X_pool, y_pool = load_svmlight_file(data_pool)
-    num_pool, num_feat = X_pool.shape
+        # aux_data = numpy.c_[a.reshape(len(X), -1), b.reshape(len(y), -1)]
 
-    X_test, y_test = load_svmlight_file(data_test, n_features=num_feat)
+        # numpy.random.shuffle(aux_data)
+
+        # new_X = aux_data[:, :X.size//len(X)].reshape(X.shape)
+        # new_y = aux_data[:, X.size//len(x):].reshape(y.shape)
+
+        # X = new_X
+        # y = new_y
+
+        X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=(1./3.), random_state=42)
+        print "fine"
+
+    else:
+        data_pool = args.data[0]
+        data_test = args.data[1]
+
+        X_pool, y_pool = load_svmlight_file(data_pool)
+        num_pool, num_feat = X_pool.shape
+
+        X_test, y_test = load_svmlight_file(data_test, n_features=num_feat)
 
     duration = time() - t0
 
@@ -242,12 +270,19 @@ if (__name__ == '__main__'):
     if filename:
         doc = open(filename, 'w')
 
+    # name = filename.split('.')
+    # name[0] += '_all.'
+    # name_file = name[0]+name[1]
+    # doc2 = open(name_file, 'w')
+
     # plotting
     for strategy in strategies:
         accuracy = accuracies[strategy]
         auc = aucs[strategy]
 
         x = sorted(accuracy.keys())
+        # print accuracy
+        # sys.exit()
         # y = [np.mean(accuracy[xi]) for xi in x]
         # z = [np.std(accuracy[xi]) for xi in x]
         y = [np.mean(accuracy[xi]) for xi in x]
@@ -267,6 +302,15 @@ if (__name__ == '__main__'):
             for i in range(len(y)):
                 doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
             doc.write('\n')
+
+        # doc2.write(strategy+'\n'+'accuracy'+'\n')
+        # doc2.write('train size,mean,,,,,,,,,,,,excel average'+'\n')
+        # for i in range(len(y)):
+        #     doc2.write("%d,%f," % (values[i], y[i],))
+        #     for value in accuracy[values[i]]:
+        #         doc2.write(",%f" % value)
+        #     doc2.write("\n")
+        # doc2.write('\n')
 
         x = sorted(auc.keys())
         y = [np.mean(auc[xi]) for xi in x]
@@ -289,4 +333,8 @@ if (__name__ == '__main__'):
 
     if filename:
         doc.close()
-    plt.show()
+        name = filename.split('.')
+        name[1] = '.png'
+        name_file = name[0]+name[1]
+        plt.savefig(name_file, bbox_inches='tight')
+    # plt.show()
