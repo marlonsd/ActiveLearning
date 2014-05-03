@@ -7,29 +7,32 @@ For now, the program is handling just binary classification
 
 '''
 
-from time import time
-
-import argparse # To use arguments
+import argparse
 import math
 import numpy as np
+import matplotlib.pyplot as plt
 
-import sys
+from collections import defaultdict
+from time import time
 
 from sklearn import metrics
-from sklearn.naive_bayes import MultinomialNB, GaussianNB
+
+from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
 
 from sklearn.datasets import load_svmlight_file
+
 from sklearn.cross_validation import train_test_split
 
 from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy, ErrorReductionStrategy
 
-from collections import defaultdict
 
-import matplotlib.pyplot as plt # Plotting
-
-
-def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha):
+def learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, boot_strap_size, classifier, alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
     
@@ -37,7 +40,9 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
         
         print "trial", t
         
-        X_pool_csr = X_pool.tocsr()
+        # X_pool_csr = X_pool.tocsr()
+        X_pool_csr = X_pool.toarray()
+        # X_test = X_test.toarray()
     
         pool = set(range(len(y_pool)))
         
@@ -79,7 +84,7 @@ def learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
             # Prediction
-            y_probas = model.predict_proba(X_test)
+            y_probas = model.predict_proba(X_test.toarray())
 
             # Metrics
             auc = metrics.roc_auc_score(y_test, y_probas[:,1])     
@@ -105,7 +110,7 @@ if (__name__ == '__main__'):
     parser = argparse.ArgumentParser()
 
     # Classifier
-    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'LogisticRegression', 'SVC',
+    parser.add_argument("-c","--classifier", choices=['KNeighborsClassifier', 'LogisticRegression', 'SVC', 'BernoulliNB',
                         'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
                         default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
@@ -170,18 +175,7 @@ if (__name__ == '__main__'):
         
         X, y = load_svmlight_file(data)
 
-        # aux_data = numpy.c_[a.reshape(len(X), -1), b.reshape(len(y), -1)]
-
-        # numpy.random.shuffle(aux_data)
-
-        # new_X = aux_data[:, :X.size//len(X)].reshape(X.shape)
-        # new_y = aux_data[:, X.size//len(x):].reshape(y.shape)
-
-        # X = new_X
-        # y = new_y
-
         X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=(1./3.), random_state=42)
-        print "fine"
 
     else:
         data_pool = args.data[0]
@@ -220,7 +214,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         t0 = time()
 
-        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, strategy, budget, step_size, boot_strap_size, classifier, alpha)
+        accuracies[strategy], aucs[strategy] = learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, boot_strap_size, classifier, alpha)
 
         duration[strategy] = time() - t0
 
@@ -270,28 +264,18 @@ if (__name__ == '__main__'):
     if filename:
         doc = open(filename, 'w')
 
-    # name = filename.split('.')
-    # name[0] += '_all.'
-    # name_file = name[0]+name[1]
-    # doc2 = open(name_file, 'w')
-
     # plotting
     for strategy in strategies:
         accuracy = accuracies[strategy]
         auc = aucs[strategy]
 
         x = sorted(accuracy.keys())
-        # print accuracy
-        # sys.exit()
-        # y = [np.mean(accuracy[xi]) for xi in x]
-        # z = [np.std(accuracy[xi]) for xi in x]
         y = [np.mean(accuracy[xi]) for xi in x]
         z = [np.std(accuracy[xi]) for xi in x]
         e = np.array(z) / math.sqrt(num_trials)
 
         plt.figure(1)
         plt.subplot(211)
-        # plt.errorbar(x,y,yerr=e, label=strategy)
         plt.plot(x, y, '-', label=strategy)
         plt.legend(loc='best')
         plt.title('Accuracy')
@@ -303,15 +287,6 @@ if (__name__ == '__main__'):
                 doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
             doc.write('\n')
 
-        # doc2.write(strategy+'\n'+'accuracy'+'\n')
-        # doc2.write('train size,mean,,,,,,,,,,,,excel average'+'\n')
-        # for i in range(len(y)):
-        #     doc2.write("%d,%f," % (values[i], y[i],))
-        #     for value in accuracy[values[i]]:
-        #         doc2.write(",%f" % value)
-        #     doc2.write("\n")
-        # doc2.write('\n')
-
         x = sorted(auc.keys())
         y = [np.mean(auc[xi]) for xi in x]
         z = [np.std(auc[xi]) for xi in x]
@@ -319,7 +294,6 @@ if (__name__ == '__main__'):
           
 
         plt.subplot(212)
-        # plt.errorbar(x,y,yerr=e, label=strategy)
         plt.plot(x, y, '-', label=strategy)
         plt.legend(loc='best')
         plt.title('AUC')
@@ -336,5 +310,5 @@ if (__name__ == '__main__'):
         name = filename.split('.')
         name[1] = '.png'
         name_file = name[0]+name[1]
-        plt.savefig(name_file, bbox_inches='tight')
-    # plt.show()
+
+    plt.show()
