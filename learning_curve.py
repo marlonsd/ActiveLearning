@@ -31,7 +31,9 @@ from sklearn.cross_validation import train_test_split
 
 from instance_strategies import LogGainStrategy, RandomStrategy, UncStrategy, RotateStrategy, BootstrapFromEach, QBCStrategy, ErrorReductionStrategy
 
-
+'''
+Main function. This function is responsible for training and testing.
+'''
 def learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, boot_strap_size, classifier, alpha):
     accuracies = defaultdict(lambda: [])
     aucs = defaultdict(lambda: [])    
@@ -39,10 +41,12 @@ def learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, bo
     for t in range(num_trials):
         
         print "trial", t
-        
-        # X_pool_csr = X_pool.tocsr()
-        X_pool_csr = X_pool.toarray()
-        # X_test = X_test.toarray()
+
+        # Gaussian Naive Bayes requires denses matrizes
+        if (classifier) == type(GaussianNB()):
+            X_pool_csr = X_pool.toarray()
+        else:
+            X_pool_csr = X_pool.tocsr()
     
         pool = set(range(len(y_pool)))
         
@@ -84,7 +88,12 @@ def learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, bo
             model.fit(X_pool_csr[trainIndices], y_pool[trainIndices])
             
             # Prediction
-            y_probas = model.predict_proba(X_test.toarray())
+            
+            # Gaussian Naive Bayes requires denses matrizes
+            if (classifier) == type(GaussianNB()):
+                y_probas = model.predict_proba(X_test.toarray())
+            else:
+                y_probas = model.predict_proba(X_test)
 
             # Metrics
             auc = metrics.roc_auc_score(y_test, y_probas[:,1])     
@@ -96,7 +105,6 @@ def learning(num_trials, X_pool, y_pool, X_test, strategy, budget, step_size, bo
             accuracies[len(trainIndices)].append(accu)
             aucs[len(trainIndices)].append(auc)
 
-    # print accuracies, aucs
     return accuracies, aucs
     
 
@@ -114,21 +122,21 @@ if (__name__ == '__main__'):
                         'DecisionTreeClassifier', 'RandomForestClassifier', 'AdaBoostClassifier', 'GaussianNB', 'MultinomialNB'],
                         default='MultinomialNB', help="Represents the classifier that will be used (default: MultinomialNB) .")
 
-    # # Arguments
+    # Classifier's arguments
     parser.add_argument("-a","--arguments", default='',
                         help="Represents the arguments that will be passed to the classifier (default: '').")    
 
-    # Data
+    # Data: Testing and training already split
     parser.add_argument("-d", '--data', nargs=2, metavar=('pool', 'test'),
                         default=["data/imdb-binary-pool-mindf5-ng11", "data/imdb-binary-test-mindf5-ng11"],
                         help='Files that contain the data, pool and test, and number of \
                         features (default: data/imdb-binary-pool-mindf5-ng11 data/imdb-binary-test-mindf5-ng11 27272).')
     
-    # Simple File
+    # Data: Single file
     parser.add_argument("-sd", '--sdata', type=str, default='',
                         help='Single file that contains the data, it will be splitted (default: None).')
 
-    # File
+    # File: Name of file that will be written the results
     parser.add_argument("-f", '--file', type=str, default='',
                         help='This feature represents the name that will be written with the result. \
                         If it is left blank, the file will not be written (default: '' ).')
@@ -157,10 +165,14 @@ if (__name__ == '__main__'):
     parser.add_argument("-sp", '--subpool', default=250, type=int,
                         help='Sets the sub pool size (default: 250).')
 
+
+    # Parsing args
     args = parser.parse_args()
 
-    classifier = eval(args.classifier)
+    # args.classifier is a string, eval makes it a class
+    classifier = eval((args.classifier))
 
+    # Parsing classifier's arguments
     model_arguments = args.arguments.split(',')
 
     alpha = {}
@@ -170,14 +182,19 @@ if (__name__ == '__main__'):
             index, value = argument.split('=')
             alpha[index] = eval(value)
 
+    # Two formats of data are possible, split into training and testing or not split
     if args.sdata:
+        # Not Split, single file
         data = args.sdata
         
         X, y = load_svmlight_file(data)
 
+        # Splitting 2/3 of data as training data and 1/3 as testing
+        # Data selected randomly
         X_pool, X_test, y_pool, y_test = train_test_split(X, y, test_size=(1./3.), random_state=42)
 
     else:
+        # Split data
         data_pool = args.data[0]
         data_test = args.data[1]
 
@@ -261,6 +278,7 @@ if (__name__ == '__main__'):
     for strategy in strategies:
         print "%s\t%0.2f" % (strategy, duration[strategy])
 
+    # Creates file, if asked
     if filename:
         doc = open(filename, 'w')
 
@@ -269,6 +287,7 @@ if (__name__ == '__main__'):
         accuracy = accuracies[strategy]
         auc = aucs[strategy]
 
+        # Plotting Accuracy
         x = sorted(accuracy.keys())
         y = [np.mean(accuracy[xi]) for xi in x]
         z = [np.std(accuracy[xi]) for xi in x]
@@ -280,6 +299,7 @@ if (__name__ == '__main__'):
         plt.legend(loc='best')
         plt.title('Accuracy')
 
+        # Saves all accuracies into a file
         if filename:
             doc.write(strategy+'\n'+'accuracy'+'\n')
             doc.write('train size,mean,standard deviation,standard error'+'\n')
@@ -287,6 +307,7 @@ if (__name__ == '__main__'):
                 doc.write("%d,%f,%f,%f\n" % (values[i], y[i], z[i], e[i]))
             doc.write('\n')
 
+        # Plotting AUC
         x = sorted(auc.keys())
         y = [np.mean(auc[xi]) for xi in x]
         z = [np.std(auc[xi]) for xi in x]
@@ -298,6 +319,7 @@ if (__name__ == '__main__'):
         plt.legend(loc='best')
         plt.title('AUC')
 
+        # Saves all acus into a file
         if filename:
             doc.write('AUC'+'\n')
             doc.write('train size,mean,standard deviation,standard error'+'\n')
@@ -307,8 +329,5 @@ if (__name__ == '__main__'):
 
     if filename:
         doc.close()
-        name = filename.split('.')
-        name[1] = '.png'
-        name_file = name[0]+name[1]
 
     plt.show()
