@@ -1,20 +1,6 @@
 Loading the data
-fine
 
-Loading took 22.23s.
-
-trial 0
-trial 1
-trial 2
-trial 3
-trial 4
-trial 5
-trial 6
-trial 7
-trial 8
-trial 9
-
-rand Learning curve took 112.34s.
+Loading took 23.01s.
 
 trial 0
 trial 1
@@ -27,7 +13,7 @@ trial 7
 trial 8
 trial 9
 
-qbc Learning curve took 789.87s.
+rand Learning curve took 79.31s.
 
 trial 0
 trial 1
@@ -40,7 +26,20 @@ trial 7
 trial 8
 trial 9
 
-unc Learning curve took 114.94s.
+qbc Learning curve took 690.82s.
+
+trial 0
+trial 1
+trial 2
+trial 3
+trial 4
+trial 5
+trial 6
+trial 7
+trial 8
+trial 9
+
+unc Learning curve took 72.42s.
 
 
 		Accuracy mean
@@ -151,6 +150,6 @@ Train Size	rand		qbc		unc
 
 	Time
 Strategy	Time
-rand	112.34
-qbc	789.87
-unc	114.94
+rand	79.31
+qbc	690.82
+unc	72.42
