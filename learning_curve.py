@@ -145,7 +145,6 @@ if (__name__ == '__main__'):
     parser.add_argument("-nt", "--num_trials", type=int, default=10, help="Number of trials (default: 10).")
 
     # Strategies
-    # Usage: -st loggain qbc rand unc
     parser.add_argument("-st", "--strategies", choices=['erreduct', 'loggain', 'qbc', 'rand','unc'], nargs='*',default=['rand'],
                         help="Represent a list of strategies for choosing next samples (default: rand).")
 

@@ -8,9 +8,9 @@ For now, the program is handling just binary classification
 
 import math
 import numpy as np
-import scipy.sparse as ss
 from collections import defaultdict
-import sys
+
+import scipy.sparse as ss
 
 class RandomBootstrap(object):
     def __init__(self, seed):
